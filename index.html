@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ค่าน้ำมัน กบล.ฉ.2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#047857">
+    <title>บันทึกค่าน้ำมันรถ กบล.ฉ.2</title>
+    
+    <!-- โหลด Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- โหลดฟอนต์ Prompt จาก Google Fonts เพื่อความอ่านง่าย สบายตา เหมาะกับภาษาไทย -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- โหลด Chart.js สำหรับสร้างกราฟแท่งและกราฟเส้น -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        slate: {
+                            850: '#1e293b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ปรับแต่ง Scrollbar, Safe Area สำหรับ iPhone และ Touch Highlight สำหรับมือถือ */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            background-color: #f8fafc;
+            padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+        }
+        /* รองรับรอยบากด้านบนของ iPhone (Notch / Dynamic Island) */
+        .safe-top {
+            padding-top: max(1rem, env(safe-area-inset-top));
+        }
+        /* รองรับแถบ Home Indicator ด้านล่างของ iPhone */
+        .safe-bottom {
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+        /* ซ่อนลูกศรในช่องกรอกตัวเลข */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        /* ปรับแต่ง input วันที่ให้แสดงผลสวยงามบน iOS Safari */
+        input[type="date"] {
+            -webkit-appearance: none;
+            min-height: 3.25rem;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- แถบหัวข้อด้านบน -->
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-30 safe-top">
+        <div class="max-w-lg mx-auto px-4 pb-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <!-- ไอคอนหัวจ่ายน้ำมัน -->
+                <div class="bg-emerald-600 p-2.5 rounded-xl shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-emerald-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">บันทึกค่าน้ำมันรถ กบล.ฉ.2</h1>
+                    <p class="text-xs text-emerald-200" id="currentMonthLabel">กำลังโหลดข้อมูล...</p>
+                </div>
+            </div>
+            <!-- ปุ่มรีเซ็ตข้อมูลตัวอย่าง -->
+            <button onclick="confirmResetData()" class="text-xs bg-emerald-800 hover:bg-emerald-900 text-emerald-100 px-3 py-2 rounded-lg transition active:scale-95" title="รีเซ็ตข้อมูลตัวอย่าง">
+                รีเซ็ตตัวอย่าง
+            </button>
+        </div>
+    </header>
+
+    <!-- เนื้อหาหลัก -->
+    <main class="max-w-lg mx-auto px-4 pt-5 space-y-6">
+
+        <!-- 0. แถบเลือกและจัดการรถ (สูงสุด 10 คัน) -->
+        <section class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-2.5 px-1">
+                <label for="carSelector" class="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8m-8 5h8m-4-9a9 9 0 110 18 9 9 0 010-18z" />
+                    </svg>
+                    <span>เลือกรถที่บันทึก</span>
+                </label>
+                <span id="carCountBadge" class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">1/10 คัน</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="relative flex-1">
+                    <select id="carSelector" onchange="handleCarChange()" class="w-full appearance-none text-base font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-2xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <!-- รายชื่อทะเบียนรถจะถูกสร้างด้วย JS -->
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+                <button onclick="openCarManageModal()" class="px-4 py-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 font-bold text-sm rounded-2xl border border-emerald-200 transition flex items-center space-x-1 whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>จัดการรถ</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 1. การ์ดสรุปยอดเดือนนี้ เทียบกับเดือนก่อน (ตัวใหญ่ อ่านง่าย) -->
+        <section class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-base font-medium text-slate-600">ค่าน้ำมัน</span>
+                    <div class="relative">
+                        <select id="monthSelector" onchange="handleMonthChange()" class="appearance-none bg-emerald-50 text-emerald-800 font-bold text-sm px-3.5 py-1.5 pr-8 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                            <!-- ตัวเลือกเดือนจะถูกสร้างด้วย JS -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-emerald-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <span id="monthComparisonBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-slate-100 text-slate-600">
+                    กำลังคำนวณ...
+                </span>
+            </div>
+            
+            <div class="flex items-baseline space-x-2 my-1">
+                <span id="thisMonthCost" class="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">0</span>
+                <span class="text-xl font-medium text-slate-500">บาท</span>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
+                <div>
+                    <p class="text-xs sm:text-sm text-slate-500">เดือนก่อนหน้าจ่าย</p>
+                    <p class="text-base sm:text-lg font-semibold text-slate-700 mt-0.5"><span id="lastMonthCost">0</span> บ.</p>
+                </div>
+                <div class="border-x border-slate-100 px-2">
+                    <p class="text-xs sm:text-sm text-slate-500">อัตราประหยัด</p>
+                    <p class="text-base sm:text-lg font-semibold text-emerald-600 mt-0.5"><span id="avgKmPerLiter">0.0</span> กม./ล.</p>
+                </div>
+                <div class="pl-1">
+                    <p class="text-xs sm:text-sm text-slate-500">เฉลี่ยต่อกม.</p>
+                    <p class="text-base sm:text-lg font-semibold text-amber-600 mt-0.5"><span id="avgBahtPerKm">0.00</span> บ./กม.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. กราฟแท่งค่าน้ำมันแต่ละเดือน และ กิโลต่อลิตรเฉลี่ย -->
+        <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-lg font-bold text-slate-800">สถิติรายเดือน</h2>
+                    <!-- ปุ่มสลับดูกราฟ 6 เดือน / 12 เดือน -->
+                    <div class="inline-flex bg-slate-100 p-0.5 rounded-xl border border-slate-200/60">
+                        <button type="button" id="btnChart6M" onclick="setChartMonths(6)" class="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-emerald-700 shadow-sm transition">
+                            6 เดือน
+                        </button>
+                        <button type="button" id="btnChart12M" onclick="setChartMonths(12)" class="px-2.5 py-1 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition">
+                            12 เดือน
+                        </button>
+                    </div>
+                </div>
+                <div class="flex space-x-3 text-xs">
+                    <span class="flex items-center text-emerald-700 font-medium">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 mr-1.5"></span> ค่าน้ำมัน (บาท)
+                    </span>
+                    <span class="flex items-center text-amber-600 font-medium">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 mr-1.5"></span> กม./ลิตร
+                    </span>
+                </div>
+            </div>
+            <!-- พื้นที่แสดงกราฟ -->
+            <div class="relative h-60 w-full">
+                <canvas id="fuelChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 3. ประวัติการเติมน้ำมัน -->
+        <section>
+            <div class="flex justify-between items-center mb-3 px-1">
+                <h2 id="historySectionTitle" class="text-xl font-bold text-slate-800">ประวัติการเติมน้ำมัน</h2>
+                <span id="recordCount" class="text-sm font-medium text-slate-500 bg-slate-200/70 px-3 py-1 rounded-full">0 รายการ</span>
+            </div>
+
+            <!-- รายการการ์ดประวัติการเติมน้ำมัน -->
+            <div id="recordsList" class="space-y-4">
+                <!-- รายการจะถูกสร้างด้วย JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ปุ่มลอยด้านล่างสำหรับกด "เติมน้ำมัน" -->
+    <div class="fixed bottom-0 left-0 right-0 px-4 pt-4 safe-bottom bg-gradient-to-t from-slate-100 via-slate-100/95 to-transparent z-30">
+        <div class="max-w-lg mx-auto">
+            <button onclick="openModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xl py-4 px-6 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-3 transition transform active:scale-[0.98]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>บันทึกการเติมน้ำมัน</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับเพิ่ม / แก้ไขข้อมูล -->
+    <div id="fuelModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center transition-opacity">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 safe-bottom shadow-2xl transform transition-transform max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="modalTitle" class="text-2xl font-bold text-slate-800">บันทึกการเติมน้ำมัน</h3>
+                <button onclick="closeModal()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <form id="fuelForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="recordId">
+
+                <!-- แสดงทะเบียนรถที่กำลังบันทึก -->
+                <div class="bg-slate-100 px-4 py-2.5 rounded-2xl flex items-center justify-between">
+                    <span class="text-sm text-slate-500">กำลังบันทึกสำหรับรถ:</span>
+                    <span id="modalCarPlateDisplay" class="text-base font-bold text-emerald-700">-</span>
+                </div>
+
+                <!-- วันที่เติม -->
+                <div>
+                    <label for="inputDate" class="block text-base font-semibold text-slate-700 mb-1">วันที่เติมน้ำมัน</label>
+                    <input type="date" id="inputDate" required class="w-full text-lg px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <!-- เลขไมล์ -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="inputOdometer" class="block text-base font-semibold text-slate-700">เลขไมล์หน้าปัด (กม.)</label>
+                        <span id="lastOdometerHint" class="text-xs font-medium text-emerald-600"></span>
+                    </div>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="inputOdometer" step="1" placeholder="เช่น 45820" required class="w-full text-xl font-semibold px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- จำนวนลิตร -->
+                    <div>
+                        <label for="inputLiters" class="block text-base font-semibold text-slate-700 mb-1">จำนวน (ลิตร)</label>
+                        <input type="number" inputmode="decimal" id="inputLiters" step="0.01" oninput="calculateLivePrice()" placeholder="เช่น 32.50" required class="w-full text-xl font-semibold px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+
+                    <!-- จำนวนเงิน -->
+                    <div>
+                        <label for="inputCost" class="block text-base font-semibold text-slate-700 mb-1">จำนวนเงิน (บาท)</label>
+                        <input type="number" inputmode="decimal" id="inputCost" step="0.01" oninput="calculateLivePrice()" placeholder="เช่น 1150" required class="w-full text-xl font-semibold px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <!-- แสดงราคาต่อลิตรอัตโนมัติขณะกรอก -->
+                <div class="bg-emerald-50 text-emerald-800 px-4 py-2.5 rounded-xl text-sm flex justify-between items-center">
+                    <span>ราคาน้ำมันเฉลี่ย:</span>
+                    <span id="livePricePerLiter" class="font-bold text-base">0.00 บาท/ลิตร</span>
+                </div>
+
+                <!-- ปุ่มบันทึก -->
+                <div class="pt-2 flex space-x-3">
+                    <button type="button" onclick="closeModal()" class="w-1/3 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg rounded-2xl transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="w-2/3 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-2xl shadow-md transition active:scale-[0.98]">
+                        บันทึกข้อมูล
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal ยืนยันการลบ / รีเซ็ต -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 id="confirmTitle" class="text-xl font-bold text-slate-800 mb-2">ยืนยันการดำเนินการ</h3>
+            <p id="confirmMessage" class="text-base text-slate-600 mb-6">คุณต้องการดำเนินการนี้ใช่หรือไม่?</p>
+            <div class="flex space-x-3">
+                <button onclick="closeConfirmModal()" class="w-1/2 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base rounded-2xl transition">
+                    ยกเลิก
+                </button>
+                <button id="confirmActionBtn" class="w-1/2 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold text-base rounded-2xl shadow-md transition">
+                    ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal จัดการรายชื่อรถ (เพิ่ม / ลบรถ สูงสุด 10 คัน) -->
+    <div id="carManageModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center transition-opacity">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 safe-bottom shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">จัดการทะเบียนรถ</h3>
+                    <p class="text-xs text-slate-500">บันทึกได้สูงสุด 10 คัน (แยกเลขไมล์และประวัติแต่ละคัน)</p>
+                </div>
+                <button onclick="closeCarManageModal()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- ฟอร์มเพิ่มรถคันใหม่ -->
+            <form id="addCarForm" onsubmit="handleAddCar(event)" class="mb-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <label for="newCarPlate" class="block text-sm font-bold text-slate-700 mb-1.5">เพิ่มรถคันใหม่ (เลขทะเบียน / ชื่อเรียก)</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="newCarPlate" maxlength="30" placeholder="เช่น 1กข 1234 กทม" required class="flex-1 text-base font-semibold px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <button type="submit" id="addCarSubmitBtn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition whitespace-nowrap">
+                        + เพิ่มรถ
+                    </button>
+                </div>
+            </form>
+
+            <!-- รายการรถทั้งหมดที่มี -->
+            <div class="overflow-y-auto flex-1 space-y-2.5 pr-1" id="carListContainer">
+                <!-- รายการรถจะถูกสร้างด้วย JS -->
+            </div>
+
+            <div class="pt-4 mt-2 border-t border-slate-100">
+                <button onclick="closeCarManageModal()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-base rounded-2xl transition">
+                    เสร็จสิ้น
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- กล่องแจ้งเตือนแบบ Toast -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg text-sm sm:text-base font-medium z-50 transition-all duration-300 opacity-0 pointer-events-none whitespace-nowrap">
+        บันทึกเรียบร้อยแล้ว
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. การจัดการข้อมูลและตัวแปรหลัก
+        // ==========================================
+        const STORAGE_KEY = 'thai_car_fuel_records_v1';
+        const CARS_STORAGE_KEY = 'thai_car_list_v1';
+        const ACTIVE_CAR_KEY = 'thai_active_car_v1';
+        const MAX_CARS = 10;
+
+        let cars = [];
+        let activeCarId = '';
+        let selectedMonthKey = ''; // รูปแบบ 'YYYY-MM' หรือ 'ALL'
+        let chartMonthsRange = 6;  // จำนวนเดือนย้อนหลังของกราฟ (6 หรือ 12)
+        let fuelRecords = [];
+        let chartInstance = null;
+
+        // ชื่อเดือนภาษาไทยแบบย่อและเต็ม
+        const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+        // ==========================================
+        // 2. สร้างข้อมูลตัวอย่าง 6 ครั้ง ย้อนหลัง 2 เดือนจากวันที่ปัจจุบันในเครื่อง
+        // ==========================================
+        function generateDefaultSampleData(targetCarId = 'car-default-1') {
+            const now = new Date();
+            
+            const getDateDaysAgo = (daysAgo) => {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            return [
+                {
+                    id: 'sample-1',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(52),
+                    odometer: 42150,
+                    liters: 35.00,
+                    cost: 1260
+                },
+                {
+                    id: 'sample-2',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(41),
+                    odometer: 42640,
+                    liters: 34.50,
+                    cost: 1240
+                },
+                {
+                    id: 'sample-3',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(31),
+                    odometer: 43110,
+                    liters: 33.80,
+                    cost: 1210
+                },
+                {
+                    id: 'sample-4',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(20),
+                    odometer: 43630,
+                    liters: 36.10,
+                    cost: 1280
+                },
+                {
+                    id: 'sample-5',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(10),
+                    odometer: 44120,
+                    liters: 34.00,
+                    cost: 1190
+                },
+                {
+                    id: 'sample-6',
+                    carId: targetCarId,
+                    date: getDateDaysAgo(2),
+                    odometer: 44645,
+                    liters: 35.50,
+                    cost: 1250
+                }
+            ];
+        }
+
+        // โหลดข้อมูลรถและประวัติการเติมน้ำมันจาก LocalStorage
+        function loadData() {
+            try {
+                const savedCars = localStorage.getItem(CARS_STORAGE_KEY);
+                if (savedCars) {
+                    cars = JSON.parse(savedCars);
+                }
+                if (!cars || cars.length === 0) {
+                    cars = [{ id: 'car-default-1', plate: '1กข 8899 กทม' }];
+                }
+
+                const savedActiveCar = localStorage.getItem(ACTIVE_CAR_KEY);
+                if (savedActiveCar && cars.some(c => c.id === savedActiveCar)) {
+                    activeCarId = savedActiveCar;
+                } else {
+                    activeCarId = cars[0].id;
+                }
+
+                const savedRecords = localStorage.getItem(STORAGE_KEY);
+                if (savedRecords) {
+                    fuelRecords = JSON.parse(savedRecords);
+                    let migrated = false;
+                    fuelRecords = fuelRecords.map(rec => {
+                        if (!rec.carId) {
+                            migrated = true;
+                            return { ...rec, carId: cars[0].id };
+                        }
+                        return rec;
+                    });
+                    if (migrated) saveData();
+                } else {
+                    fuelRecords = generateDefaultSampleData(cars[0].id);
+                    saveData();
+                }
+            } catch (e) {
+                console.error("Error loading data:", e);
+                cars = [{ id: 'car-default-1', plate: '1กข 8899 กทม' }];
+                activeCarId = cars[0].id;
+                fuelRecords = generateDefaultSampleData(activeCarId);
+            }
+        }
+
+        // บันทึกข้อมูลทั้งหมดลง LocalStorage
+        function saveData() {
+            try {
+                localStorage.setItem(CARS_STORAGE_KEY, JSON.stringify(cars));
+                localStorage.setItem(ACTIVE_CAR_KEY, activeCarId);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fuelRecords));
+            } catch (e) {
+                showToast("ไม่สามารถบันทึกข้อมูลลงเครื่องได้");
+            }
+        }
+
+        // คืนค่ารายการเฉพาะรถคันที่เลือกอยู่
+        function getActiveCarRecords() {
+            return fuelRecords.filter(r => r.carId === activeCarId);
+        }
+
+        // ==========================================
+        // 3. ระบบคำนวณระยะทาง กม./ลิตร และ บาท/กม. (เฉพาะคันที่เลือก)
+        // ==========================================
+        function processRecordsWithCalculations() {
+            const activeRecords = getActiveCarRecords();
+            
+            // เรียงลำดับจากเก่าไปใหม่เพื่อคำนวณระยะทางที่วิ่งได้แต่ละครั้ง
+            const sortedAsc = [...activeRecords].sort((a, b) => {
+                if (a.date !== b.date) {
+                    return a.date.localeCompare(b.date);
+                }
+                return a.odometer - b.odometer;
+            });
+
+            const calculated = sortedAsc.map((record, index) => {
+                let distance = null;
+                let kmPerLiter = null;
+                let bahtPerKm = null;
+                const pricePerLiter = record.liters > 0 ? (record.cost / record.liters) : 0;
+
+                if (index > 0) {
+                    const prevRecord = sortedAsc[index - 1];
+                    const diff = record.odometer - prevRecord.odometer;
+                    if (diff > 0) {
+                        distance = diff;
+                        kmPerLiter = record.liters > 0 ? (distance / record.liters) : 0;
+                        bahtPerKm = distance > 0 ? (record.cost / distance) : 0;
+                    }
+                }
+
+                return {
+                    ...record,
+                    distance,
+                    kmPerLiter,
+                    bahtPerKm,
+                    pricePerLiter
+                };
+            });
+
+            // คืนค่าเรียงจากใหม่ไปเก่าสำหรับการแสดงผลในรายการ
+            return calculated.reverse();
+        }
+
+        // ==========================================
+        // 4. อัปเดตหน้าจอทั้งหมด (UI Rendering)
+        // ==========================================
+        function updateUI() {
+            renderCarSelector();
+            const processedRecords = processRecordsWithCalculations();
+            
+            renderMonthSelector(processedRecords);
+            updateTopSummary(processedRecords);
+            updateChart(processedRecords);
+            renderRecordsList(processedRecords);
+        }
+
+        // สร้างรายการตัวเลือกเดือนที่มีข้อมูล + เดือนปัจจุบัน + ดูทั้งหมด
+        function renderMonthSelector(processedRecords) {
+            const selector = document.getElementById('monthSelector');
+            const now = new Date();
+            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            const monthSet = new Set([currentMonthKey]);
+            processedRecords.forEach(rec => {
+                if (rec.date && rec.date.length >= 7) {
+                    monthSet.add(rec.date.substring(0, 7));
+                }
+            });
+
+            // เรียงจากเดือนล่าสุดไปเก่าสุด
+            const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
+
+            // หากยังไม่ได้เลือกเดือน หรือเดือนที่เลือกไม่มีในรายการให้ตั้งเป็นเดือนปัจจุบัน
+            if (!selectedMonthKey || (selectedMonthKey !== 'ALL' && !monthSet.has(selectedMonthKey))) {
+                selectedMonthKey = currentMonthKey;
+            }
+
+            let optionsHTML = sortedMonths.map(mKey => {
+                const [y, m] = mKey.split('-').map(Number);
+                const thaiYear = y + 543;
+                const label = `${THAI_MONTHS_FULL[m - 1]} ${thaiYear}`;
+                return `<option value="${mKey}" ${mKey === selectedMonthKey ? 'selected' : ''}>เดือน${label}</option>`;
+            }).join('');
+
+            optionsHTML += `<option value="ALL" ${selectedMonthKey === 'ALL' ? 'selected' : ''}>ทุกเดือนทั้งหมด</option>`;
+            selector.innerHTML = optionsHTML;
+        }
+
+        // เมื่อผู้ใช้เปลี่ยนเดือนที่เลือก
+        function handleMonthChange() {
+            const selector = document.getElementById('monthSelector');
+            selectedMonthKey = selector.value;
+            updateUI();
+        }
+
+        // อัปเดต Dropdown เลือกรถ
+        function renderCarSelector() {
+            const selector = document.getElementById('carSelector');
+            const badge = document.getElementById('carCountBadge');
+            
+            badge.textContent = `${cars.length}/${MAX_CARS} คัน`;
+            
+            selector.innerHTML = cars.map(car => {
+                const count = fuelRecords.filter(r => r.carId === car.id).length;
+                return `<option value="${car.id}" ${car.id === activeCarId ? 'selected' : ''}>🚗 ${escapeHTML(car.plate)} (${count} ครั้ง)</option>`;
+            }).join('');
+        }
+
+        // เมื่อผู้ใช้เปลี่ยนรถใน Dropdown
+        function handleCarChange() {
+            const selector = document.getElementById('carSelector');
+            activeCarId = selector.value;
+            saveData();
+            updateUI();
+        }
+
+        // อัปเดตการ์ดสรุปยอดด้านบน (ตามเดือนที่เลือก เทียบกับเดือนก่อนหน้า)
+        function updateTopSummary(processedRecords) {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            // แสดงชื่อเดือนปัจจุบันบน Header
+            const thaiYear = currentYear + 543;
+            document.getElementById('currentMonthLabel').textContent = `วันนี้: ${now.getDate()} ${THAI_MONTHS_SHORT[currentMonth]} ${thaiYear}`;
+
+            const badge = document.getElementById('monthComparisonBadge');
+
+            if (selectedMonthKey === 'ALL') {
+                let grandTotal = 0;
+                let totalKmPerLiter = 0;
+                let totalBahtPerKm = 0;
+                let validEfficiencyCount = 0;
+
+                processedRecords.forEach(rec => {
+                    grandTotal += Number(rec.cost);
+                    if (rec.kmPerLiter !== null && rec.kmPerLiter > 0) {
+                        totalKmPerLiter += rec.kmPerLiter;
+                        totalBahtPerKm += rec.bahtPerKm;
+                        validEfficiencyCount++;
+                    }
+                });
+
+                document.getElementById('thisMonthCost').textContent = grandTotal.toLocaleString('th-TH');
+                document.getElementById('lastMonthCost').textContent = '-';
+
+                const avgEff = validEfficiencyCount > 0 ? (totalKmPerLiter / validEfficiencyCount) : 0;
+                const avgCostPerKm = validEfficiencyCount > 0 ? (totalBahtPerKm / validEfficiencyCount) : 0;
+                document.getElementById('avgKmPerLiter').textContent = avgEff.toFixed(1);
+                document.getElementById('avgBahtPerKm').textContent = avgCostPerKm.toFixed(2);
+
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-emerald-100 text-emerald-800';
+                badge.textContent = `ยอดรวมทั้งหมด (${processedRecords.length} ครั้ง)`;
+                return;
+            }
+
+            // คำนวณปีและเดือนของเดือนที่เลือก และ "เดือนก่อนหน้า" ของเดือนที่เลือก
+            const [selYear, selMonthNum] = selectedMonthKey.split('-').map(Number);
+            const selMonth = selMonthNum - 1;
+
+            let prevMonth = selMonth - 1;
+            let prevYear = selYear;
+            if (prevMonth < 0) {
+                prevMonth = 11;
+                prevYear -= 1;
+            }
+
+            let selectedMonthTotal = 0;
+            let prevMonthTotal = 0;
+            let totalKmPerLiter = 0;
+            let totalBahtPerKm = 0;
+            let validEfficiencyCount = 0;
+
+            processedRecords.forEach(rec => {
+                const [y, m] = rec.date.split('-').map(Number);
+                const recYear = y;
+                const recMonth = m - 1;
+
+                if (recYear === selYear && recMonth === selMonth) {
+                    selectedMonthTotal += Number(rec.cost);
+                    if (rec.kmPerLiter !== null && rec.kmPerLiter > 0) {
+                        totalKmPerLiter += rec.kmPerLiter;
+                        totalBahtPerKm += rec.bahtPerKm;
+                        validEfficiencyCount++;
+                    }
+                } else if (recYear === prevYear && recMonth === prevMonth) {
+                    prevMonthTotal += Number(rec.cost);
+                }
+            });
+
+            document.getElementById('thisMonthCost').textContent = selectedMonthTotal.toLocaleString('th-TH');
+            document.getElementById('lastMonthCost').textContent = prevMonthTotal.toLocaleString('th-TH');
+
+            const avgEff = validEfficiencyCount > 0 ? (totalKmPerLiter / validEfficiencyCount) : 0;
+            const avgCostPerKm = validEfficiencyCount > 0 ? (totalBahtPerKm / validEfficiencyCount) : 0;
+            document.getElementById('avgKmPerLiter').textContent = avgEff.toFixed(1);
+            document.getElementById('avgBahtPerKm').textContent = avgCostPerKm.toFixed(2);
+
+            // อัปเดตป้ายเปรียบเทียบกับเดือนก่อนหน้า
+            if (prevMonthTotal === 0 && selectedMonthTotal === 0) {
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-slate-100 text-slate-600';
+                badge.textContent = 'ยังไม่มีข้อมูลในเดือนนี้';
+            } else if (prevMonthTotal === 0) {
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-emerald-100 text-emerald-700';
+                badge.textContent = 'ไม่มีข้อมูลเดือนก่อนหน้า';
+            } else {
+                const diff = selectedMonthTotal - prevMonthTotal;
+                const percent = Math.abs((diff / prevMonthTotal) * 100).toFixed(0);
+                if (diff > 0) {
+                    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-amber-100 text-amber-800';
+                    badge.textContent = `▲ เพิ่มขึ้น ${diff.toLocaleString('th-TH')} บ. (${percent}%)`;
+                } else if (diff < 0) {
+                    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-emerald-100 text-emerald-800';
+                    badge.textContent = `▼ ประหยัดขึ้น ${Math.abs(diff).toLocaleString('th-TH')} บ. (${percent}%)`;
+                } else {
+                    badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700';
+                    badge.textContent = 'เท่ากับเดือนก่อนหน้า';
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. สร้างและอัปเดตกราฟรายเดือน (Chart.js)
+        // ==========================================
+        function setChartMonths(months) {
+            chartMonthsRange = months;
+            
+            const btn6 = document.getElementById('btnChart6M');
+            const btn12 = document.getElementById('btnChart12M');
+            
+            if (months === 6) {
+                btn6.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-emerald-700 shadow-sm transition';
+                btn12.className = 'px-2.5 py-1 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition';
+            } else {
+                btn12.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-emerald-700 shadow-sm transition';
+                btn6.className = 'px-2.5 py-1 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 transition';
+            }
+            
+            updateChart(processRecordsWithCalculations());
+        }
+
+        function updateChart(processedRecords) {
+            const ctx = document.getElementById('fuelChart').getContext('2d');
+            
+            // สร้างช่วงเดือนย้อนหลังตามจำนวนเดือนที่เลือก (6 หรือ 12 เดือนล่าสุด รวมเดือนปัจจุบัน)
+            const now = new Date();
+            const monthSlots = [];
+            for (let i = chartMonthsRange - 1; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const y = d.getFullYear();
+                const m = d.getMonth();
+                const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+                const thaiYearShort = String(y + 543).slice(-2);
+                monthSlots.push({
+                    key,
+                    label: `${THAI_MONTHS_SHORT[m]} ${thaiYearShort}`,
+                    totalCost: 0,
+                    effSum: 0,
+                    effCount: 0
+                });
+            }
+
+            // รวมยอดค่าน้ำมันและอัตราสิ้นเปลืองลงในแต่ละเดือน
+            processedRecords.forEach(rec => {
+                const monthKey = rec.date.substring(0, 7); // YYYY-MM
+                const slot = monthSlots.find(s => s.key === monthKey);
+                if (slot) {
+                    slot.totalCost += Number(rec.cost);
+                    if (rec.kmPerLiter !== null && rec.kmPerLiter > 0) {
+                        slot.effSum += rec.kmPerLiter;
+                        slot.effCount++;
+                    }
+                }
+            });
+
+            const labels = monthSlots.map(s => s.label);
+            const costData = monthSlots.map(s => s.totalCost);
+            const effData = monthSlots.map(s => s.effCount > 0 ? Number((s.effSum / s.effCount).toFixed(1)) : null);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'ค่าน้ำมัน (บาท)',
+                            data: costData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 8,
+                            barPercentage: 0.55,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: 'อัตราประหยัด (กม./ลิตร)',
+                            data: effData,
+                            type: 'line',
+                            borderColor: '#f59e0b',
+                            backgroundColor: '#f59e0b',
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#f59e0b',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            spanGaps: true,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { family: 'Prompt', size: 13 },
+                            bodyFont: { family: 'Prompt', size: 13 },
+                            padding: 10,
+                            cornerRadius: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return ` ค่าน้ำมัน: ${context.parsed.y.toLocaleString('th-TH')} บาท`;
+                                    } else {
+                                        return context.parsed.y !== null 
+                                            ? ` เฉลี่ย: ${context.parsed.y} กม./ลิตร`
+                                            : ` เฉลี่ย: ไม่มีข้อมูล`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Prompt', size: chartMonthsRange === 12 ? 9.5 : 11 },
+                                color: '#64748b',
+                                maxRotation: chartMonthsRange === 12 ? 45 : 0,
+                                autoSkip: false
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { family: 'Prompt', size: 10 },
+                                color: '#64748b',
+                                callback: value => value >= 1000 ? (value / 1000) + 'k' : value
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            suggestedMax: 25,
+                            grid: { drawOnChartArea: false },
+                            ticks: {
+                                font: { family: 'Prompt', size: 10 },
+                                color: '#d97706'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // 6. แสดงรายการประวัติการเติมน้ำมัน
+        // ==========================================
+        function formatThaiDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const thaiYear = y + 543;
+            return `${d} ${THAI_MONTHS_SHORT[m - 1]} ${thaiYear}`;
+        }
+
+        function renderRecordsList(processedRecords) {
+            const container = document.getElementById('recordsList');
+            const countBadge = document.getElementById('recordCount');
+            const historyTitle = document.getElementById('historySectionTitle');
+
+            // กรองรายการตามเดือนที่เลือก
+            const filteredRecords = selectedMonthKey === 'ALL'
+                ? processedRecords
+                : processedRecords.filter(rec => rec.date.startsWith(selectedMonthKey));
+
+            if (selectedMonthKey === 'ALL') {
+                historyTitle.textContent = 'ประวัติการเติมน้ำมัน (ทั้งหมด)';
+            } else {
+                const [y, m] = selectedMonthKey.split('-').map(Number);
+                historyTitle.textContent = `ประวัติเดือน${THAI_MONTHS_SHORT[m - 1]} ${y + 543}`;
+            }
+
+            countBadge.textContent = `${filteredRecords.length} รายการ`;
+
+            if (filteredRecords.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl p-8 text-center border border-slate-100 shadow-sm">
+                        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <p class="text-slate-600 font-semibold text-base">ไม่มีประวัติการเติมน้ำมันในช่วงเวลาที่เลือก</p>
+                        <p class="text-slate-400 text-sm mt-1">ลองเลือกเดือนอื่น หรือกดปุ่ม "บันทึกการเติมน้ำมัน" ด้านล่าง</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredRecords.map(rec => {
+                const hasEfficiency = rec.kmPerLiter !== null && rec.distance > 0;
+                
+                return `
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 transition hover:border-emerald-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-base font-bold text-slate-800">${formatThaiDate(rec.date)}</span>
+                                <span class="text-xs font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
+                                    ไมล์ ${Number(rec.odometer).toLocaleString('th-TH')} กม.
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">
+                                เติม ${Number(rec.liters).toFixed(2)} ลิตร (${rec.pricePerLiter.toFixed(2)} บ./ลิตร)
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-bold text-emerald-700">${Number(rec.cost).toLocaleString('th-TH')}</span>
+                            <span class="text-xs font-medium text-slate-500"> บาท</span>
+                        </div>
+                    </div>
+
+                    <!-- แถบแสดงระยะทางและอัตราประหยัด -->
+                    <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                        ${hasEfficiency ? `
+                            <div class="flex flex-wrap gap-2">
+                                <span class="inline-flex items-center text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg">
+                                    ⚡ ${rec.kmPerLiter.toFixed(2)} กม./ลิตร
+                                </span>
+                                <span class="inline-flex items-center text-xs font-medium bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg">
+                                    🛣️ วิ่งได้ ${rec.distance.toLocaleString('th-TH')} กม. (${rec.bahtPerKm.toFixed(2)} บ./กม.)
+                                </span>
+                            </div>
+                        ` : `
+                            <span class="text-xs text-slate-400 italic">จุดเริ่มต้นวัดระยะทาง (รอบแรก)</span>
+                        `}
+
+                        <!-- ปุ่มแก้ไขและลบ -->
+                        <div class="flex items-center space-x-1 ml-2">
+                            <button onclick="openModal('${rec.id}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition" title="แก้ไข">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button onclick="confirmDeleteRecord('${rec.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition" title="ลบรายการ">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // 7. การจัดการ Modal เพิ่ม / แก้ไขการเติมน้ำมัน
+        // ==========================================
+        function openModal(editId = null) {
+            const modal = document.getElementById('fuelModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('fuelForm');
+            const activeCar = cars.find(c => c.id === activeCarId);
+            
+            const activeRecords = getActiveCarRecords().sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return b.odometer - a.odometer;
+            });
+            const lastOdoHint = document.getElementById('lastOdometerHint');
+
+            if (editId) {
+                const record = fuelRecords.find(r => r.id === editId);
+                if (!record) return;
+                title.textContent = 'แก้ไขข้อมูลการเติมน้ำมัน';
+                document.getElementById('recordId').value = record.id;
+                document.getElementById('inputDate').value = record.date;
+                document.getElementById('inputOdometer').value = record.odometer;
+                document.getElementById('inputLiters').value = record.liters;
+                document.getElementById('inputCost').value = record.cost;
+                lastOdoHint.textContent = '';
+            } else {
+                title.textContent = 'บันทึกการเติมน้ำมัน';
+                document.getElementById('recordId').value = '';
+                
+                // ตั้งค่าวันที่ปัจจุบัน
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                document.getElementById('inputDate').value = todayStr;
+
+                if (activeRecords.length > 0) {
+                    lastOdoHint.textContent = `ไมล์ล่าสุด: ${Number(activeRecords[0].odometer).toLocaleString('th-TH')} กม.`;
+                } else {
+                    lastOdoHint.textContent = 'ยังไม่มีประวัติเลขไมล์';
+                }
+            }
+
+            calculateLivePrice();
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('fuelModal').classList.add('hidden');
+        }
+
+        function calculateLivePrice() {
+            const liters = parseFloat(document.getElementById('inputLiters').value) || 0;
+            const cost = parseFloat(document.getElementById('inputCost').value) || 0;
+            const pricePerLiter = liters > 0 ? (cost / liters) : 0;
+            document.getElementById('livePricePerLiter').textContent = `${pricePerLiter.toFixed(2)} บาท/ลิตร`;
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('recordId').value;
+            const date = document.getElementById('inputDate').value;
+            const odometer = parseFloat(document.getElementById('inputOdometer').value);
+            const liters = parseFloat(document.getElementById('inputLiters').value);
+            const cost = parseFloat(document.getElementById('inputCost').value);
+
+            if (!date || isNaN(odometer) || isNaN(liters) || isNaN(cost) || liters <= 0 || cost <= 0) {
+                showToast("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง");
+                return;
+            }
+
+            if (id) {
+                const index = fuelRecords.findIndex(r => r.id === id);
+                if (index !== -1) {
+                    fuelRecords[index] = {
+                        ...fuelRecords[index],
+                        date,
+                        odometer,
+                        liters,
+                        cost
+                    };
+                }
+                showToast("แก้ไขข้อมูลเรียบร้อยแล้ว");
+            } else {
+                const newRecord = {
+                    id: 'rec-' + Date.now(),
+                    carId: activeCarId,
+                    date,
+                    odometer,
+                    liters,
+                    cost
+                };
+                fuelRecords.push(newRecord);
+                showToast("บันทึกการเติมน้ำมันเรียบร้อยแล้ว");
+            }
+
+            // อัปเดตตัวเลือกเดือนให้ตรงกับรายการที่เพิ่งบันทึก (หากไม่ได้เลือกดู "ทุกเดือนทั้งหมด")
+            if (selectedMonthKey !== 'ALL' && date && date.length >= 7) {
+                selectedMonthKey = date.substring(0, 7);
+            }
+
+            saveData();
+            closeModal();
+            updateUI();
+        }
+
+        // ==========================================
+        // 8. การจัดการรถ (เพิ่ม / ลบรถ สูงสุด 10 คัน)
+        // ==========================================
+        function openCarManageModal() {
+            renderCarManageList();
+            document.getElementById('carManageModal').classList.remove('hidden');
+        }
+
+        function closeCarManageModal() {
+            document.getElementById('carManageModal').classList.add('hidden');
+        }
+
+        function renderCarManageList() {
+            const container = document.getElementById('carListContainer');
+            const submitBtn = document.getElementById('addCarSubmitBtn');
+            const inputPlate = document.getElementById('newCarPlate');
+
+            if (cars.length >= MAX_CARS) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                inputPlate.disabled = true;
+                inputPlate.placeholder = 'ครบจำนวนสูงสุด 10 คันแล้ว';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                inputPlate.disabled = false;
+                inputPlate.placeholder = 'เช่น 1กข 1234 กทม';
+            }
+
+            container.innerHTML = cars.map(car => {
+                const isSelected = car.id === activeCarId;
+                const recCount = fuelRecords.filter(r => r.carId === car.id).length;
+                return `
+                    <div class="flex items-center justify-between p-3.5 rounded-2xl border ${isSelected ? 'bg-emerald-50/70 border-emerald-300' : 'bg-white border-slate-200'}">
+                        <div class="flex items-center space-x-3 cursor-pointer flex-1" onclick="selectCarFromModal('${car.id}')">
+                            <div class="w-10 h-10 rounded-xl ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center font-bold">
+                                🚗
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-base">${escapeHTML(car.plate)}</p>
+                                <p class="text-xs text-slate-500">บันทึกแล้ว ${recCount} รายการ ${isSelected ? '• <span class="text-emerald-600 font-semibold">กำลังใช้งาน</span>' : ''}</p>
+                            </div>
+                        </div>
+                        ${cars.length > 1 ? `
+                            <button onclick="confirmDeleteCar('${car.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition" title="ลบรถคันนี้">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectCarFromModal(carId) {
+            activeCarId = carId;
+            saveData();
+            updateUI();
+            renderCarManageList();
+        }
+
+        function handleAddCar(event) {
+            event.preventDefault();
+            if (cars.length >= MAX_CARS) {
+                showToast(`เพิ่มรถได้สูงสุด ${MAX_CARS} คันเท่านั้น`);
+                return;
+            }
+            const input = document.getElementById('newCarPlate');
+            const plate = input.value.trim();
+            if (!plate) return;
+
+            const newCar = {
+                id: 'car-' + Date.now(),
+                plate: plate
+            };
+            cars.push(newCar);
+            activeCarId = newCar.id;
+            input.value = '';
+
+            saveData();
+            updateUI();
+            renderCarManageList();
+            showToast(`เพิ่มรถ "${plate}" เรียบร้อยแล้ว`);
+        }
+
+        // ==========================================
+        // 9. การยืนยันการลบ / รีเซ็ตข้อมูล (Custom Modal)
+        // ==========================================
+        let pendingConfirmAction = null;
+
+        function openConfirmModal(title, message, actionCallback) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            pendingConfirmAction = actionCallback;
+            
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.onclick = () => {
+                if (pendingConfirmAction) pendingConfirmAction();
+                closeConfirmModal();
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            pendingConfirmAction = null;
+        }
+
+        function confirmDeleteRecord(recordId) {
+            openConfirmModal(
+                'ยืนยันการลบรายการ',
+                'คุณต้องการลบประวัติการเติมน้ำมันรายการนี้ใช่หรือไม่?',
+                () => {
+                    fuelRecords = fuelRecords.filter(r => r.id !== recordId);
+                    saveData();
+                    updateUI();
+                    showToast('ลบรายการเรียบร้อยแล้ว');
+                }
+            );
+        }
+
+        function confirmDeleteCar(carId) {
+            const targetCar = cars.find(c => c.id === carId);
+            if (!targetCar || cars.length <= 1) return;
+
+            openConfirmModal(
+                'ยืนยันการลบรถ',
+                `ต้องการลบรถ "${targetCar.plate}" และประวัติการเติมน้ำมันทั้งหมดของรถคันนี้ใช่หรือไม่?`,
+                () => {
+                    cars = cars.filter(c => c.id !== carId);
+                    fuelRecords = fuelRecords.filter(r => r.carId !== carId);
+                    if (activeCarId === carId) {
+                        activeCarId = cars[0].id;
+                    }
+                    saveData();
+                    updateUI();
+                    renderCarManageList();
+                    showToast(`ลบรถ "${targetCar.plate}" เรียบร้อยแล้ว`);
+                }
+            );
+        }
+
+        function confirmResetData() {
+            openConfirmModal(
+                'รีเซ็ตเป็นข้อมูลตัวอย่าง',
+                'ข้อมูลทั้งหมดจะถูกล้างและกลับไปเป็นข้อมูลตัวอย่างเริ่มต้น ยืนยันหรือไม่?',
+                () => {
+                    cars = [{ id: 'car-default-1', plate: '1กข 8899 กทม' }];
+                    activeCarId = cars[0].id;
+                    fuelRecords = generateDefaultSampleData(activeCarId);
+                    saveData();
+                    updateUI();
+                    showToast('รีเซ็ตข้อมูลตัวอย่างเรียบร้อยแล้ว');
+                }
+            );
+        }
+
+        // ==========================================
+        // 10. ฟังก์ชันเสริม (Toast & XSS Protection)
+        // ==========================================
+        let toastTimeout = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2600);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // เริ่มต้นทำงานเมื่อโหลดหน้าเว็บเสร็จสมบูรณ์
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
